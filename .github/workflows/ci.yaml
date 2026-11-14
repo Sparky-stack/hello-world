@@ -30,6 +30,7 @@ jobs:
     uses: koorikla/ci/.github/workflows/go.yaml@v1
     permissions:
       contents: read
+      actions: read
       packages: write
       id-token: write
       attestations: write

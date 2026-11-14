@@ -34,13 +34,25 @@ docker build --build-arg VERSION=dev -t hello-world:dev .
 
 ## CI flow
 
-Configured in `.github/workflows/ci.yaml`:
+Configured in `.github/workflows/ci.yaml`, which calls the reusable
+[`koorikla/ci/.github/workflows/go.yaml@v1`](https://github.com/koorikla/ci):
 
-- **Pull requests to `main`**: runs `go vet ./...`, `go test -race -v ./...`, `hack/validate-manifests.py`, and a local `docker build` (without pushing).
-- **Push to `main`** (ignoring `deploy/**` changes):
-  1. `test`: runs Go vet, Go race tests, and OpenChoreo manifest validation.
-  2. `build`: builds the multi-stage distroless image (`VERSION=<short-sha>`) and pushes `ghcr.io/koorikla/hello-world:<short-sha>` and `:main` to GHCR using `GITHUB_TOKEN` (`packages: write`).
-  3. `bump`: updates `deploy/openchoreo/workload.yaml` (`spec.container.image` and `spec.source.commit`), re-validates manifests, and commits back to `main` as `github-actions[bot]` with `[skip ci]`.
+1. `validate-manifests`: `hack/validate-manifests.py` against the OpenChoreo CRD schemas.
+2. `go` (reusable): `go vet`, golangci-lint, `go test -race` with coverage, govulncheck, CodeQL, then a
+   multi-arch (`linux/amd64`, `linux/arm64`) image build. On PRs the image is built (amd64) and
+   Trivy-scanned only. On push to `main` it is pushed to `ghcr.io/koorikla/hello-world:<short-sha>`
+   (+ `:<full-sha>`, `:main`), Trivy-scanned per platform, and gets an SPDX SBOM, GitHub SLSA provenance
+   and SBOM attestations, a cosign keyless signature and a cosign vuln attestation.
+3. `bump` (push to `main` only, ignoring `deploy/**`): updates `deploy/openchoreo/workload.yaml`
+   (`spec.container.image`, `spec.source.commit`), re-validates, commits back with `[skip ci]`.
+
+Verify an image:
+
+```sh
+cosign verify ghcr.io/koorikla/hello-world:<short-sha> \
+  --certificate-identity-regexp '^https://github.com/koorikla/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
 
 ## Deployment & Promotion
 
