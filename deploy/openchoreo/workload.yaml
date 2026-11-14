@@ -12,9 +12,9 @@ spec:
   source:
     repository: https://github.com/koorikla/hello-world
     branch: main
-    commit: "d5d74db8493eeb8e5ac8f9c1ef4a4990c3916d90"
+    commit: "d04ca591762b5c5b286f80d01d53af096ebbf47e"
   container:
-    image: ghcr.io/koorikla/hello-world:d5d74db
+    image: ghcr.io/koorikla/hello-world:d04ca59
     env:
       - key: GREETING
         value: hello
