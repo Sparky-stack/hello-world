@@ -1,0 +1,26 @@
+# OpenChoreo Component: the developer-facing definition of hello-world.
+#
+# No metadata.namespace on purpose: the platform's Argo CD Application sets the
+# destination namespace (the OpenChoreo org namespace, `default`).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: hello-world
+  annotations:
+    openchoreo.dev/display-name: Hello World
+    openchoreo.dev/description: Tiny Go HTTP service used to exercise the platform end to end
+spec:
+  owner:
+    projectName: demo # immutable; Project is created by the platform (tenants/demo.yaml)
+  componentType:
+    # Upstream 1.3.3 default ClusterComponentType `service` (workloadType deployment).
+    # Immutable after creation.
+    kind: ClusterComponentType
+    name: deployment/service
+  # autoDeploy: true -> on every Component/Workload change the OpenChoreo
+  # controller cuts an immutable ComponentRelease (hello-world-<hash>) from the
+  # *platform's* ClusterComponentType and points the first pipeline environment's
+  # ReleaseBinding (development) at it. CI only bumps the image in workload.yaml,
+  # so `main` is continuously deployed to development. Staging and production are
+  # pinned in Git (release-bindings/*.yaml) and only move via a reviewed PR.
+  autoDeploy: true

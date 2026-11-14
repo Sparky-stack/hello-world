@@ -1,0 +1,22 @@
+# ReleaseBinding for `development` (first environment of the pipeline).
+#
+# spec.releaseName is intentionally NOT set here: with Component.spec.autoDeploy
+# the OpenChoreo controller creates the ComponentRelease and updates this
+# ReleaseBinding automatically (Argo CD ignores `/spec/releaseName` so GitOps
+# does not revert controller-managed promotions).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: hello-world-development
+spec:
+  owner:
+    projectName: default
+    componentName: hello-world
+  environment: development
+  componentTypeEnvOverrides:
+    replicas: 1
+  workloadOverrides:
+    container:
+      env:
+        - key: GREETING
+          value: hello from development

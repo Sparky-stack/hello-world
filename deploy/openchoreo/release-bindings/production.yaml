@@ -1,0 +1,21 @@
+# ReleaseBinding for `production`.
+#
+# PROMOTION = a PR that sets spec.releaseName to the ComponentRelease currently
+# running in staging (see README "Promotion"). Until it is promoted, this
+# ReleaseBinding stays dormant (no releaseName -> nothing deployed to production).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: hello-world-production
+spec:
+  owner:
+    projectName: default
+    componentName: hello-world
+  environment: production
+  componentTypeEnvOverrides:
+    replicas: 1
+  workloadOverrides:
+    container:
+      env:
+        - key: GREETING
+          value: hello from production

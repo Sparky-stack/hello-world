@@ -1,0 +1,28 @@
+# OpenChoreo Workload: the runtime contract (image, endpoints, config).
+# spec.container.image and spec.source.commit are bumped by CI on every push to
+# main (.github/workflows/ci.yaml, job `bump`). Do not edit them by hand.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: hello-world-workload
+spec:
+  owner:
+    projectName: demo
+    componentName: hello-world
+  source:
+    repository: https://github.com/koorikla/hello-world
+    branch: main
+    commit: "0000000"
+  container:
+    image: ghcr.io/koorikla/hello-world:main
+    env:
+      - key: GREETING
+        value: hello
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      basePath: /
+      # external = routed through the environment's external gateway; requires
+      # gateway.ingress.external on the Environment/DataPlane.
+      visibility: [external]
