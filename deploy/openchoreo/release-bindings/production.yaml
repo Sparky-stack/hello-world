@@ -1,19 +1,27 @@
 # ReleaseBinding for `production`.
 #
 # PROMOTION = a PR that sets spec.releaseName to the ComponentRelease currently
-# running in staging (see README "Promotion"). Until it is promoted, this
-# ReleaseBinding stays dormant (no releaseName -> nothing deployed to production).
+# running in staging (see README "Promotion"). Until it is set, this binding
+# stays pending (ReleaseSynced=False, ComponentReleaseNotFound).
 apiVersion: openchoreo.dev/v1alpha1
 kind: ReleaseBinding
 metadata:
   name: hello-world-production
 spec:
   owner:
-    projectName: default
+    projectName: demo
     componentName: hello-world
   environment: production
-  componentTypeEnvOverrides:
-    replicas: 1
+  # releaseName: hello-world-<hash>
+  componentTypeEnvironmentConfigs:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
   workloadOverrides:
     container:
       env:

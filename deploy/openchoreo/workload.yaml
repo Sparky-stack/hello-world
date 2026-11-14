@@ -22,7 +22,6 @@ spec:
     http:
       type: HTTP
       port: 8080
-      basePath: /
       # external = routed through the environment's external gateway; requires
       # gateway.ingress.external on the Environment/DataPlane.
       visibility: [external]

@@ -19,9 +19,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -31,7 +31,7 @@ jobs:
       - name: Go test
         run: go test -race -v ./...
 
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v10
 
       - name: Validate OpenChoreo manifests
         run: uv run --with pyyaml --with jsonschema python3 hack/validate-manifests.py
@@ -46,7 +46,7 @@ jobs:
       short_sha: ${{ steps.vars.outputs.short_sha }}
       image: ${{ steps.vars.outputs.image }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Compute image metadata
         id: vars
@@ -92,7 +92,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: main
 
@@ -111,7 +111,7 @@ jobs:
           p.write_text(text)
           PY
 
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v10
 
       - name: Validate bumped manifests
         run: uv run --with pyyaml --with jsonschema python3 hack/validate-manifests.py

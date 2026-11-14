@@ -1,6 +1,6 @@
 # hello-world
 
-Minimal Go HTTP service deployed on OpenChoreo 1.3.3 (`koorikla/platform`).
+Minimal Go HTTP service used to exercise the `koorikla/platform` stack (Cluster API + Argo CD + OpenChoreo 1.3.3) end to end.
 
 ## Endpoints
 
@@ -9,9 +9,9 @@ Minimal Go HTTP service deployed on OpenChoreo 1.3.3 (`koorikla/platform`).
 
 Configuration:
 
-- `LISTEN_ADDR` (default `:8080`)
-- `GREETING` (default `hello from koorikla`)
-- `main.version` (set via `-ldflags "-X main.version=..."`, default `dev`)
+- `PORT` (default `8080`)
+- `GREETING` (default `hello`)
+- `main.version` (injected at build time via `-ldflags "-X main.version=<git sha>"`, default `dev`)
 
 ## Local run & verification
 
@@ -34,21 +34,27 @@ docker build --build-arg VERSION=dev -t hello-world:dev .
 
 ## CI flow
 
-On every push to `main` (ignoring `deploy/**` changes and commits marked `[skip ci]`):
+Configured in `.github/workflows/ci.yaml`:
 
-1. `test`: runs `go vet ./...`, `go test -race -v ./...`, and `hack/validate-manifests.py`.
-2. `build`: builds the multi-stage distroless image (`VERSION=<short-sha>`) and pushes `ghcr.io/koorikla/hello-world:<short-sha>` and `:main` to GHCR.
-3. `bump`: updates `deploy/openchoreo/workload.yaml` (`spec.container.image` and `spec.source.commit`), re-validates manifests, and commits back to `main` with `[skip ci]`.
+- **Pull requests to `main`**: runs `go vet ./...`, `go test -race -v ./...`, `hack/validate-manifests.py`, and a local `docker build` (without pushing).
+- **Push to `main`** (ignoring `deploy/**` changes):
+  1. `test`: runs Go vet, Go race tests, and OpenChoreo manifest validation.
+  2. `build`: builds the multi-stage distroless image (`VERSION=<short-sha>`) and pushes `ghcr.io/koorikla/hello-world:<short-sha>` and `:main` to GHCR using `GITHUB_TOKEN` (`packages: write`).
+  3. `bump`: updates `deploy/openchoreo/workload.yaml` (`spec.container.image` and `spec.source.commit`), re-validates manifests, and commits back to `main` as `github-actions[bot]` with `[skip ci]`.
 
 ## Deployment & Promotion
 
-`deploy/openchoreo/` is synced by Argo CD (registered in `koorikla/platform`):
+`deploy/openchoreo/` holds the OpenChoreo 1.3.3 developer manifests for project `demo`:
 
-- `component.yaml`: `Component` referencing `ClusterComponentType` `deployment/service` with `autoDeploy: true`.
-- `workload.yaml`: `Workload` defining the container image, default `GREETING`, and external HTTP endpoint on port `8080`.
-- `release-bindings/development.yaml`: `ReleaseBinding` for `development` (omits `spec.releaseName` because `autoDeploy: true` lets OpenChoreo create the `ComponentRelease` and update the binding; Argo CD ignores `/spec/releaseName`).
-- `release-bindings/staging.yaml` and `production.yaml`: dormant until promoted.
+- `component.yaml`: `Component/hello-world` referencing `ClusterComponentType` `deployment/service` with `autoDeploy: true`.
+- `workload.yaml`: `Workload/hello-world-workload` defining the GHCR image, `GREETING` env, and external `HTTP` endpoint on port `8080`.
+- `release-bindings/development.yaml`: `ReleaseBinding/hello-world-development` (omits `spec.releaseName`; `autoDeploy: true` causes the OpenChoreo controller to cut an immutable `ComponentRelease` named `hello-world-<hash>` and update this binding automatically, while Argo CD ignores `/spec/releaseName`).
+- `release-bindings/staging.yaml` & `production.yaml`: `ReleaseBinding` objects for `staging` (on `dev1`) and `production` (on `prod1`), dormant until promoted.
 
 ### Promotion
 
-To promote a release to `staging` or `production`, open a PR setting `spec.releaseName` in `deploy/openchoreo/release-bindings/staging.yaml` (or `production.yaml`) to the `ComponentRelease` name currently running in the previous environment.
+To promote to `staging` or `production`, open a PR setting `spec.releaseName` in `deploy/openchoreo/release-bindings/staging.yaml` (or `production.yaml`) to the `ComponentRelease` name (`hello-world-<hash>`) currently running in the preceding environment.
+
+### Platform-side registration
+
+The platform repository (`koorikla/platform`) registers this app in `installations/local/tenants/demo.yaml`, which creates the `demo` OpenChoreo `Project`, an isolated `AppProject` (`demo`) whitelisting `Component`, `Workload`, and `ReleaseBinding` in namespace `default`, and an Argo CD `Application` syncing `deploy/openchoreo`.
