@@ -24,3 +24,23 @@ spec:
   # so `main` is continuously deployed to development. Staging and production are
   # pinned in Git (release-bindings/*.yaml) and only move via a reviewed PR.
   autoDeploy: true
+  # Build: OpenChoreo workflow plane (default build path, koorikla/platform docs/build-plane.md). ClusterWorkflow `go`
+  # runs koorikla/ci's scripts/go/check.sh + scans, builds a multi-arch image with rootless BuildKit, pushes it to the
+  # platform registry (Harbor apps/demo/hello-world), signs and attests it, then commits the image ref into
+  # workload.yaml - Argo CD deploys that commit. Trigger: Backstage "Build" (WorkflowRun), or every push once the GitHub
+  # webhook reaches openchoreo-api (autoBuild). GitHub Actions (.github/workflows/ci.yaml) is the optional alternative:
+  # set repository variable IMAGE_BUILDER=github-actions to let it build and bump instead.
+  autoBuild: true
+  workflow:
+    kind: ClusterWorkflow
+    name: go
+    parameters:
+      repository:
+        url: https://github.com/koorikla/hello-world.git
+        revision:
+          branch: main
+        appPath: "."
+      docker:
+        context: "."
+        filePath: Dockerfile
+      platforms: linux/amd64,linux/arm64   # the Dockerfile cross-compiles: no emulation needed
