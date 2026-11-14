@@ -53,7 +53,23 @@ the Go checks (CodeQL included). With repository variable `IMAGE_BUILDER=github-
 multi-arch image to `ghcr.io/koorikla/hello-world:<short-sha>`, Trivy, SBOM, GitHub SLSA provenance, cosign keyless
 signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`).
 
-Verify a GitHub-built image:
+Verify a platform-built image (default path; platform key, no public Rekor entry by default):
+
+```sh
+# cosign.pub of the platform (public): from the platform operator, or on the mgmt cluster
+kubectl -n platform-secrets get secret cosign-platform -o jsonpath='{.data.cosign\.pub}' | base64 -d > cosign.pub
+# Harbor uses the platform's registry CA: trust it for cosign (SSL_CERT_FILE) or `docker login` first
+cosign verify --key cosign.pub --insecure-ignore-tlog=true \
+  harbor.openchoreo.localhost:9443/apps/demo/hello-world@sha256:<digest>
+cosign verify-attestation --key cosign.pub --insecure-ignore-tlog=true --type spdxjson \
+  harbor.openchoreo.localhost:9443/apps/demo/hello-world@sha256:<digest>
+```
+
+`--insecure-ignore-tlog=true` because the platform signs without uploading to the public Rekor log (installation
+switch `buildWorkflows.signing.transparencyLog`); drop it when that switch is on. The digest is the one in
+`deploy/openchoreo/workload.yaml`.
+
+Verify a GitHub-built image (keyless):
 
 ```sh
 cosign verify ghcr.io/koorikla/hello-world:<short-sha> \
