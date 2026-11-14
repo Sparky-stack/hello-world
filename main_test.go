@@ -114,7 +114,7 @@ func TestServeGracefulShutdown(t *testing.T) {
 			respCh <- "error: " + err.Error()
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		b, _ := io.ReadAll(resp.Body)
 		respCh <- string(b)
 	}()
