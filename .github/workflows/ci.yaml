@@ -50,9 +50,10 @@ jobs:
 
       - name: Bump OpenChoreo Workload
         env:
-          # <image>:<tag>@sha256:<digest>: production admits only digest references
-          # (koorikla/platform Kyverno requireDigest, koorikla/platform#16).
-          NEW_IMAGE: ${{ needs.go.outputs.image_digest_ref }}
+          # <image>:<short sha>@sha256:<index digest>: production admits only digest references
+          # (koorikla/platform Kyverno requireDigest, koorikla/platform#16); the tag keeps it readable.
+          # koorikla/ci `image_digest_ref` is <repo>@sha256:... without the tag.
+          NEW_IMAGE: ${{ needs.go.outputs.image }}@${{ needs.go.outputs.digest }}
           NEW_COMMIT: ${{ github.sha }}
         run: |
           python3 - <<'PY'
