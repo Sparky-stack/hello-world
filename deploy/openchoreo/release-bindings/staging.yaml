@@ -12,7 +12,7 @@ spec:
     projectName: demo
     componentName: hello-world
   environment: staging
-  # releaseName: hello-world-<hash>
+  releaseName: hello-world-5ff8487f7c
   componentTypeEnvironmentConfigs:
     replicas: 1
   workloadOverrides:
