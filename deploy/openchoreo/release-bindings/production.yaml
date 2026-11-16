@@ -12,7 +12,7 @@ spec:
     projectName: demo
     componentName: hello-world
   environment: production
-  releaseName: hello-world-5ff8487f7c
+  releaseName: hello-world-f89469778
   componentTypeEnvironmentConfigs:
     replicas: 2
     resources:
