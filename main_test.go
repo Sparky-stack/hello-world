@@ -70,6 +70,22 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
+func TestVersion(t *testing.T) {
+	h := newHandler(Config{Version: "abc1234"})
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/version", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	var got map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got["version"] != "abc1234" {
+		t.Errorf("version field = %q, want abc1234", got["version"])
+	}
+}
+
 func TestRouting(t *testing.T) {
 	h := newHandler(Config{})
 	cases := []struct {
@@ -79,6 +95,7 @@ func TestRouting(t *testing.T) {
 		{http.MethodGet, "/nope", http.StatusNotFound},
 		{http.MethodPost, "/", http.StatusMethodNotAllowed},
 		{http.MethodPost, "/healthz", http.StatusMethodNotAllowed},
+		{http.MethodPost, "/version", http.StatusMethodNotAllowed},
 	}
 	for _, c := range cases {
 		rec := httptest.NewRecorder()
