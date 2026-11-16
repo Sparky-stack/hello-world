@@ -50,11 +50,14 @@ jobs:
 
       - name: Bump OpenChoreo Workload
         env:
-          NEW_IMAGE: ${{ needs.go.outputs.image }}
+          # <image>:<tag>@sha256:<digest>: production admits only digest references
+          # (koorikla/platform Kyverno requireDigest, koorikla/platform#16).
+          NEW_IMAGE: ${{ needs.go.outputs.image_digest_ref }}
           NEW_COMMIT: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import os, pathlib, re
+          assert re.fullmatch(r'[^\s@]+:[^\s@]+@sha256:[0-9a-f]{64}', os.environ['NEW_IMAGE']), os.environ['NEW_IMAGE']
           p = pathlib.Path('deploy/openchoreo/workload.yaml')
           text = p.read_text()
           text, n_commit = re.subn(r'^(\s*commit:\s*).*$', rf'\g<1>"{os.environ["NEW_COMMIT"]}"', text, count=1, flags=re.M)
