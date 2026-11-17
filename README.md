@@ -49,7 +49,7 @@ the platform's workflow plane, with the same [koorikla/ci](https://github.com/ko
    `deploy/openchoreo/workload.yaml` with `[skip ci]`; Argo CD syncs it and `autoDeploy` releases it to development.
 
 **GitHub Actions** (`.github/workflows/ci.yaml`, reusable
-[`koorikla/ci/.github/workflows/go.yaml@v1`](https://github.com/koorikla/ci)) always validates the manifests and runs
+[`koorikla/ci/.github/workflows/go.yaml`](https://github.com/koorikla/ci)) always validates the manifests and runs
 the Go checks (CodeQL included). With repository variable `IMAGE_BUILDER=github-actions` it is the build path instead:
 multi-arch image to `ghcr.io/koorikla/hello-world:<short-sha>`, Trivy, SBOM, GitHub SLSA provenance, cosign keyless
 signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`).
@@ -62,7 +62,7 @@ kubectl -n platform-secrets get secret cosign-platform -o jsonpath='{.data.cosig
 # Harbor uses the platform's registry CA: trust it for cosign (SSL_CERT_FILE) or `docker login` first
 cosign verify --key cosign.pub --insecure-ignore-tlog=true \
   harbor.openchoreo.localhost:9443/apps/demo/hello-world@sha256:<digest>
-cosign verify-attestation --key cosign.pub --insecure-ignore-tlog=true --type spdxjson \
+cosign verify-attestation --key cosign.pub --insecure-ignore-tlog=true --type https://spdx.dev/Document/v2.3 \
   harbor.openchoreo.localhost:9443/apps/demo/hello-world@sha256:<digest>
 ```
 
