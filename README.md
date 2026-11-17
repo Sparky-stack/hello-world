@@ -6,7 +6,7 @@ Minimal Go HTTP service used to exercise the `koorikla/platform` stack (Cluster 
 
 - `GET /` — returns JSON `{"message", "hostname", "version"}`
 - `GET /healthz` — returns `200 OK` with `{"status": "ok"}`
-- `GET /version` — returns `200 OK` with `{"version": "<git sha>"}`
+- `GET /version` — returns `200 OK` with `{"version": "<git sha>"}` (the short commit SHA of the build; promotion checks compare it per environment)
 
 Configuration:
 
