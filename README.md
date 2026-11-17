@@ -51,7 +51,8 @@ starts one on demand. The run uses the platform's workflow plane, with the same
 4. commits `spec.container.image` (`<repo>:<short-sha>@sha256:…`) and `spec.source.commit` into
    `deploy/openchoreo/workload.yaml` with `[skip ci]`; Argo CD syncs it and `autoDeploy` releases it to development.
    The commit is authored and signed by the platform's GitHub App bot: each run gets an installation token for this
-   repository only (no personal access token; koorikla/platform docs/build-plane.md "Git credentials").
+   repository only (no personal access token; koorikla/platform docs/build-plane.md "Git credentials"), so GitHub
+   shows it as Verified.
 
 **GitHub Actions** (`.github/workflows/ci.yaml`, reusable
 [`koorikla/ci/.github/workflows/go.yaml`](https://github.com/koorikla/ci)) always validates the manifests and runs
