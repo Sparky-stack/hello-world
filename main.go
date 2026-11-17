@@ -1,5 +1,6 @@
 // Command hello-world is a tiny HTTP service used to exercise the koorikla
-// platform (OpenChoreo on Cluster API clusters) end to end.
+// platform (OpenChoreo on Cluster API clusters) end to end, including PR preview
+// environments (koorikla/platform#168).
 package main
 
 import (
