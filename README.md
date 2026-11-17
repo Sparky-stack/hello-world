@@ -36,8 +36,11 @@ docker build --build-arg VERSION=dev -t hello-world:dev .
 ## Build flow
 
 **Default: OpenChoreo workflow plane.** `deploy/openchoreo/component.yaml` names the platform's ClusterWorkflow `go`.
-A WorkflowRun (Backstage → hello-world → **Build**, or a push once the GitHub webhook reaches openchoreo-api) runs on
-the platform's workflow plane, with the same [koorikla/ci](https://github.com/koorikla/ci) scripts as the GitHub path:
+Every commit to `main` is built automatically (`autoBuild: true`): the platform's auto-build trigger creates one
+WorkflowRun `hello-world-<sha[:12]>` per commit (local installation: a poll, about a minute after the merge; cloud: a
+signed GitHub App webhook; koorikla/platform docs/build-plane.md "Auto-build"). Backstage → hello-world → **Build**
+starts one on demand. The run uses the platform's workflow plane, with the same
+[koorikla/ci](https://github.com/koorikla/ci) scripts as the GitHub path:
 
 1. checkout → `scripts/go/check.sh` (`go vet`, golangci-lint if present, `go test -race`, govulncheck) and a Trivy
    lockfile scan;
@@ -52,7 +55,8 @@ the platform's workflow plane, with the same [koorikla/ci](https://github.com/ko
 [`koorikla/ci/.github/workflows/go.yaml`](https://github.com/koorikla/ci)) always validates the manifests and runs
 the Go checks (CodeQL included). With repository variable `IMAGE_BUILDER=github-actions` it is the build path instead:
 multi-arch image to `ghcr.io/koorikla/hello-world:<short-sha>`, Trivy, SBOM, GitHub SLSA provenance, cosign keyless
-signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`).
+signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`): set
+`autoBuild: false` in `deploy/openchoreo/component.yaml` when switching to `IMAGE_BUILDER=github-actions`.
 
 Verify a platform-built image (default path; platform key, no public Rekor entry by default):
 
