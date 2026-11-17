@@ -1,7 +1,7 @@
 # OpenChoreo Workload: the runtime contract (image, endpoints, config).
-# spec.container.image (<image>:<tag>@sha256:<digest>) and spec.source.commit are
-# bumped by CI on every push to main (.github/workflows/ci.yaml, job `bump`).
-# Do not edit them by hand.
+# spec.container.image (<image>:<tag>@sha256:<digest>) and spec.source.commit are written by the build: the OpenChoreo
+# workflow (component.yaml spec.workflow, step gitops) or, if IMAGE_BUILDER=github-actions,
+# .github/workflows/ci.yaml job `bump`. Do not edit them by hand.
 apiVersion: openchoreo.dev/v1alpha1
 kind: Workload
 metadata:
@@ -13,9 +13,9 @@ spec:
   source:
     repository: https://github.com/koorikla/hello-world
     branch: main
-    commit: "caaa0ccc74a9588bd6c29563a8830958c14e8e40"
+    commit: "fd6bd2c13b3ff6113394a7392df32c1b94dd6486"
   container:
-    image: ghcr.io/koorikla/hello-world:caaa0cc@sha256:6fb4c665e3ddf8f5aaa6b833ece1dd57ac169c0d7a6dcb07f3f6c1d5be837d79
+    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:fd6bd2c@sha256:95cf0fe890fe4ed7b7d2ab9acc977b7891cf8c0c671dcaa75a952725eafb3f4b
     env:
       - key: GREETING
         value: hello

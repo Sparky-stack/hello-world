@@ -26,9 +26,14 @@ jobs:
       - name: Validate OpenChoreo manifests
         run: uv run --with pyyaml --with jsonschema python3 hack/validate-manifests.py
 
+  # Default: checks only (fast PR feedback); the image is built, signed and handed to GitOps by the OpenChoreo workflow
+  # plane (deploy/openchoreo/component.yaml spec.workflow). Optional path: repository variable
+  # IMAGE_BUILDER=github-actions builds/pushes to GHCR here and lets `bump` commit the image ref.
   go:
     needs: validate-manifests
     uses: koorikla/ci/.github/workflows/go.yaml@a31c2341b1effdd084d1dd4c715d65e97ade895f # v1
+    with:
+      build_container: ${{ vars.IMAGE_BUILDER == 'github-actions' }}
     permissions:
       contents: read
       actions: read
@@ -39,7 +44,7 @@ jobs:
 
   bump:
     needs: go
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: vars.IMAGE_BUILDER == 'github-actions' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -33,21 +33,44 @@ Build the container image locally:
 docker build --build-arg VERSION=dev -t hello-world:dev .
 ```
 
-## CI flow
+## Build flow
 
-Configured in `.github/workflows/ci.yaml`, which calls the reusable
-[`koorikla/ci/.github/workflows/go.yaml@v1`](https://github.com/koorikla/ci):
+**Default: OpenChoreo workflow plane.** `deploy/openchoreo/component.yaml` names the platform's ClusterWorkflow `go`.
+A WorkflowRun (Backstage → hello-world → **Build**, or a push once the GitHub webhook reaches openchoreo-api) runs on
+the platform's workflow plane, with the same [koorikla/ci](https://github.com/koorikla/ci) scripts as the GitHub path:
 
-1. `validate-manifests`: `hack/validate-manifests.py` against the OpenChoreo CRD schemas.
-2. `go` (reusable): `go vet`, golangci-lint, `go test -race` with coverage, govulncheck, CodeQL, then a
-   multi-arch (`linux/amd64`, `linux/arm64`) image build. On PRs the image is built (amd64) and
-   Trivy-scanned only. On push to `main` it is pushed to `ghcr.io/koorikla/hello-world:<short-sha>`
-   (+ `:<full-sha>`, `:main`), Trivy-scanned per platform, and gets an SPDX SBOM, GitHub SLSA provenance
-   and SBOM attestations, a cosign keyless signature and a cosign vuln attestation.
-3. `bump` (push to `main` only, ignoring `deploy/**`): updates `deploy/openchoreo/workload.yaml`
-   (`spec.container.image`, `spec.source.commit`), re-validates, commits back with `[skip ci]`.
+1. checkout → `scripts/go/check.sh` (`go vet`, golangci-lint if present, `go test -race`, govulncheck) and a Trivy
+   lockfile scan;
+2. rootless BuildKit builds `linux/amd64` + `linux/arm64` and pushes
+   `harbor.openchoreo.localhost:9443/apps/demo/hello-world:<short-sha>` (platform registry) with SLSA provenance;
+3. Trivy scan per platform (fails on CRITICAL), syft SBOM, cosign signature with the platform key + vuln and SBOM
+   attestations;
+4. commits `spec.container.image` (`<repo>:<short-sha>@sha256:…`) and `spec.source.commit` into
+   `deploy/openchoreo/workload.yaml` with `[skip ci]`; Argo CD syncs it and `autoDeploy` releases it to development.
 
-Verify an image:
+**GitHub Actions** (`.github/workflows/ci.yaml`, reusable
+[`koorikla/ci/.github/workflows/go.yaml`](https://github.com/koorikla/ci)) always validates the manifests and runs
+the Go checks (CodeQL included). With repository variable `IMAGE_BUILDER=github-actions` it is the build path instead:
+multi-arch image to `ghcr.io/koorikla/hello-world:<short-sha>`, Trivy, SBOM, GitHub SLSA provenance, cosign keyless
+signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`).
+
+Verify a platform-built image (default path; platform key, no public Rekor entry by default):
+
+```sh
+# cosign.pub of the platform (public): from the platform operator, or on the mgmt cluster
+kubectl -n platform-secrets get secret cosign-platform -o jsonpath='{.data.cosign\.pub}' | base64 -d > cosign.pub
+# Harbor uses the platform's registry CA: trust it for cosign (SSL_CERT_FILE) or `docker login` first
+cosign verify --key cosign.pub --insecure-ignore-tlog=true \
+  harbor.openchoreo.localhost:9443/apps/demo/hello-world@sha256:<digest>
+cosign verify-attestation --key cosign.pub --insecure-ignore-tlog=true --type https://spdx.dev/Document/v2.3 \
+  harbor.openchoreo.localhost:9443/apps/demo/hello-world@sha256:<digest>
+```
+
+`--insecure-ignore-tlog=true` because the platform signs without uploading to the public Rekor log (installation
+switch `buildWorkflows.signing.transparencyLog`); drop it when that switch is on. The digest is the one in
+`deploy/openchoreo/workload.yaml`.
+
+Verify a GitHub-built image (keyless):
 
 ```sh
 cosign verify ghcr.io/koorikla/hello-world:<short-sha> \
