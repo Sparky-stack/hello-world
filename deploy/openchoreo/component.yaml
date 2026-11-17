@@ -9,6 +9,10 @@ metadata:
   annotations:
     openchoreo.dev/display-name: Hello World
     openchoreo.dev/description: Tiny Go HTTP service used to exercise the platform end to end
+    # PR preview environments (koorikla/platform docs/preview-environments.md): every open pull request gets its own
+    # OpenChoreo environment pr-<n>-hello-world running the in-cluster build of the PR head; the URL appears on the PR
+    # as commit status openchoreo/preview. Removed when the PR closes or after the platform TTL. Remove to opt out.
+    platform.koorikla.io/preview-environments: enabled
 spec:
   owner:
     projectName: demo # immutable; Project is created by the platform (tenants/demo.yaml)
