@@ -31,7 +31,7 @@ jobs:
   # IMAGE_BUILDER=github-actions builds/pushes to GHCR here and lets `bump` commit the image ref.
   go:
     needs: validate-manifests
-    uses: koorikla/ci/.github/workflows/go.yaml@v1
+    uses: koorikla/ci/.github/workflows/go.yaml@a31c2341b1effdd084d1dd4c715d65e97ade895f # v1
     with:
       build_container: ${{ vars.IMAGE_BUILDER == 'github-actions' }}
     permissions:
@@ -55,11 +55,15 @@ jobs:
 
       - name: Bump OpenChoreo Workload
         env:
-          NEW_IMAGE: ${{ needs.go.outputs.image }}
+          # <image>:<short sha>@sha256:<index digest>: production admits only digest references
+          # (koorikla/platform Kyverno requireDigest, koorikla/platform#16); the tag keeps it readable.
+          # koorikla/ci `image_digest_ref` is <repo>@sha256:... without the tag.
+          NEW_IMAGE: ${{ needs.go.outputs.image }}@${{ needs.go.outputs.digest }}
           NEW_COMMIT: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import os, pathlib, re
+          assert re.fullmatch(r'[^\s@]+:[^\s@]+@sha256:[0-9a-f]{64}', os.environ['NEW_IMAGE']), os.environ['NEW_IMAGE']
           p = pathlib.Path('deploy/openchoreo/workload.yaml')
           text = p.read_text()
           text, n_commit = re.subn(r'^(\s*commit:\s*).*$', rf'\g<1>"{os.environ["NEW_COMMIT"]}"', text, count=1, flags=re.M)
