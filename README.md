@@ -91,6 +91,8 @@ cosign verify ghcr.io/koorikla/hello-world:<short-sha> \
 
 To promote to `staging` or `production`, open a PR setting `spec.releaseName` in `deploy/openchoreo/release-bindings/staging.yaml` (or `production.yaml`) to the `ComponentRelease` name (`hello-world-<hash>`) currently running in the preceding environment.
 
+Promoting to `production` is automatic up to the PR: once the `staging` rollout succeeds, the platform's promotion gate opens exactly one PR `promote/hello-world-production` (koorikla/platform docs/promotion.md); merge it to deploy.
+
 ### Platform-side registration
 
 The platform repository (`koorikla/platform`) registers this app in `installations/local/tenants/demo.yaml`, which creates the `demo` OpenChoreo `Project`, an isolated `AppProject` (`demo`) whitelisting `Component`, `Workload`, and `ReleaseBinding` in namespace `default`, and an Argo CD `Application` syncing `deploy/openchoreo`.
