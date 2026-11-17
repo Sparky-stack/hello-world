@@ -27,9 +27,10 @@ spec:
   # Build: OpenChoreo workflow plane (default build path, koorikla/platform docs/build-plane.md). ClusterWorkflow `go`
   # runs koorikla/ci's scripts/go/check.sh + scans, builds a multi-arch image with rootless BuildKit, pushes it to the
   # platform registry (Harbor apps/demo/hello-world), signs and attests it, then commits the image ref into
-  # workload.yaml - Argo CD deploys that commit. Trigger: Backstage "Build" (WorkflowRun), or every push once the GitHub
-  # webhook reaches openchoreo-api (autoBuild). GitHub Actions (.github/workflows/ci.yaml) is the optional alternative:
-  # set repository variable IMAGE_BUILDER=github-actions to let it build and bump instead.
+  # workload.yaml - Argo CD deploys that commit. Trigger: every new commit on main (autoBuild: the platform's auto-build
+  # trigger, one WorkflowRun hello-world-<sha12> per commit; poll locally, GitHub App webhook in cloud installations),
+  # or Backstage "Build". GitHub Actions (.github/workflows/ci.yaml) is the optional alternative: set repository
+  # variable IMAGE_BUILDER=github-actions AND autoBuild: false to let it build and bump instead.
   autoBuild: true
   workflow:
     kind: ClusterWorkflow
