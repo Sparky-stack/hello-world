@@ -13,9 +13,9 @@ spec:
   source:
     repository: https://github.com/koorikla/hello-world
     branch: main
-    commit: "b0f874a009bb4b365ebabcd76ba43613033bb3ec"
+    commit: "8fb2303387095dc150da09be4b99469e4617aa3a"
   container:
-    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:b0f874a@sha256:ab007c4cd1cf5f9b59239672968f77880b89d6db59210afe2f6271ecc9705250
+    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:8fb2303@sha256:404b6988882e9ef6beee5f7660ac0b6c827e9ed6eb08d0a4a9367faea115a874
     env:
       - key: GREETING
         value: hello
