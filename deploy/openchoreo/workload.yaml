@@ -15,7 +15,7 @@ spec:
     branch: main
     commit: "199e3757a902b837c104830e89f8e235c184540a"
   container:
-    image: ghcr.io/koorikla/hello-world:199e375@sha256:1552408ce8f70bc95aa5b1dcc8dd4684d6e238109b904153fd69ffdfc864fce6
+    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:199e375@sha256:7f563377a52013664e1d7725b1ea013136af13f06f55181d4f3fab063024f508
     env:
       - key: GREETING
         value: hello
