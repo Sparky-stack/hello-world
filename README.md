@@ -45,7 +45,8 @@ a `checks.image` override must be `image@sha256:<digest>`:
 
 1. checkout → `scripts/go/check.sh` (`go vet`, golangci-lint if present, `go test -race`, govulncheck) and a Trivy
    lockfile scan;
-2. rootless BuildKit builds `linux/amd64` + `linux/arm64` from the digest-pinned base images and pushes
+2. rootless BuildKit builds `linux/amd64` + `linux/arm64` from the digest-pinned base images (pulled through the
+   Harbor proxy caches) and pushes
    `harbor.openchoreo.localhost:9443/apps/demo/hello-world:<short-sha>` (platform registry) with SLSA provenance;
 3. Trivy scan per platform (fails on CRITICAL), syft SBOM, cosign signature with the platform key + vuln and SBOM
    attestations;
