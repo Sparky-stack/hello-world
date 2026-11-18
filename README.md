@@ -40,7 +40,8 @@ Every commit to `main` is built automatically (`autoBuild: true`): the platform'
 WorkflowRun `hello-world-<sha[:12]>` per commit (local installation: a poll, about a minute after the merge; cloud: a
 signed GitHub App webhook; koorikla/platform docs/build-plane.md "Auto-build"). Backstage → hello-world → **Build**
 starts one on demand. The run uses the platform's workflow plane, with the same
-[koorikla/ci](https://github.com/koorikla/ci) scripts as the GitHub path:
+[koorikla/ci](https://github.com/koorikla/ci) scripts as the GitHub path. Run pods admit only digest-pinned images, so
+a `checks.image` override must be `image@sha256:<digest>`:
 
 1. checkout → `scripts/go/check.sh` (`go vet`, golangci-lint if present, `go test -race`, govulncheck) and a Trivy
    lockfile scan;
