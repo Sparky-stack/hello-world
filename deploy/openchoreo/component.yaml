@@ -36,6 +36,25 @@ spec:
   # or Backstage "Build". GitHub Actions (.github/workflows/ci.yaml) is the optional alternative: set repository
   # variable IMAGE_BUILDER=github-actions AND autoBuild: false to let it build and bump instead.
   autoBuild: true
+  # Event-driven autoscaling: platform ClusterTrait keda-scaler (koorikla/platform docs/data-services.md "KEDA and
+  # OpenChoreo workloads"). Renders a KEDA ScaledObject next to the Deployment and removes spec.replicas from it, so
+  # componentTypeEnvironmentConfigs.replicas no longer applies (KEDA's HPA owns the replica count). Needs addon keda
+  # on the environment's data plane (dev1 runs it). Per-environment bounds: release-bindings/*.yaml traitEnvironmentConfigs.
+  traits:
+    - kind: ClusterTrait
+      name: keda-scaler
+      instanceName: scaler
+      parameters:
+        minReplicas: 1
+        maxReplicas: 3
+        triggers:
+          # Live proof of #70: 2 replicas from minute 0 to 5 of every 20 (UTC), back to 1 after the HPA scale-down window (5 min).
+          - type: cron
+            metadata:
+              timezone: Etc/UTC
+              start: "*/20 * * * *"
+              end: "5-59/20 * * * *"
+              desiredReplicas: "2"
   workflow:
     kind: ClusterWorkflow
     name: go
