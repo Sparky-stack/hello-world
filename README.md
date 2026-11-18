@@ -40,7 +40,7 @@ Every commit to `main` is built automatically (`autoBuild: true`): the platform'
 WorkflowRun `hello-world-<sha[:12]>` per commit (local installation: a poll, about a minute after the merge; cloud: a
 signed GitHub App webhook; koorikla/platform docs/build-plane.md "Auto-build"). Backstage → hello-world → **Build**
 starts one on demand. The run uses the platform's workflow plane, with the same
-[koorikla/ci](https://github.com/koorikla/ci) scripts as the GitHub path. Run pods admit only digest-pinned images, so
+[koorikla/platform `ci/`](https://github.com/koorikla/platform/tree/main/ci) scripts as the GitHub path. Run pods admit only digest-pinned images, so
 a `checks.image` override must be `image@sha256:<digest>`:
 
 1. checkout → `scripts/go/check.sh` (`go vet`, golangci-lint if present, `go test -race`, govulncheck) and a Trivy
@@ -57,7 +57,7 @@ a `checks.image` override must be `image@sha256:<digest>`:
    shows it as Verified.
 
 **GitHub Actions** (`.github/workflows/ci.yaml`, reusable
-[`koorikla/ci/.github/workflows/go.yaml`](https://github.com/koorikla/ci)) always validates the manifests and runs
+[`koorikla/platform/.github/workflows/app-go.yaml`](https://github.com/koorikla/platform/blob/main/.github/workflows/app-go.yaml)) always validates the manifests and runs
 the Go checks (CodeQL included). With repository variable `IMAGE_BUILDER=github-actions` it is the build path instead:
 multi-arch image to `ghcr.io/koorikla/hello-world:<short-sha>`, Trivy, SBOM, GitHub SLSA provenance, cosign keyless
 signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`): set
