@@ -31,7 +31,7 @@ jobs:
   # IMAGE_BUILDER=github-actions builds/pushes to GHCR here and lets `bump` commit the image ref.
   go:
     needs: validate-manifests
-    uses: koorikla/platform/.github/workflows/app-go.yaml@3311f541a8eab72a2649b6f1eda4fe05efa3142e # ci-v1
+    uses: koorikla/platform/.github/workflows/app-go.yaml@3311f541a8eab72a2649b6f1eda4fe05efa3142e # ci-v1.0.0
     with:
       build_container: ${{ vars.IMAGE_BUILDER == 'github-actions' }}
     permissions:
