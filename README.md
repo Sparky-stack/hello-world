@@ -61,7 +61,7 @@ a `checks.image` override must be `image@sha256:<digest>`:
 the Go checks (CodeQL included). With repository variable `IMAGE_BUILDER=github-actions` it is the build path instead:
 multi-arch image to `ghcr.io/koorikla/hello-world:<short-sha>`, Trivy, SBOM, GitHub SLSA provenance, cosign keyless
 signature, and job `bump` commits the image ref. Use one path at a time (both write `workload.yaml`): set
-`autoBuild: false` in `deploy/openchoreo/component.yaml` when switching to `IMAGE_BUILDER=github-actions`.
+`autoBuild: false` in `deploy/openchoreo/component.yaml` when switching to `IMAGE_BUILDER=github-actions`. The reusable workflow is `koorikla/platform/.github/workflows/app-go.yaml`, released as `ci-vX.Y.Z`.
 
 Verify a platform-built image (default path; platform key, no public Rekor entry by default):
 
