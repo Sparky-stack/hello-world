@@ -1,0 +1,30 @@
+# PostgreSQL through the platform API (ClusterResourceType postgresql -> Crossplane PostgreSQL XR -> CNPG on dev1).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Resource
+metadata:
+  name: hello-db
+spec:
+  owner:
+    projectName: demo
+  type:
+    kind: ClusterResourceType
+    name: postgresql
+  parameters:
+    database: hello
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ResourceReleaseBinding
+metadata:
+  name: hello-db-development
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"     # after the Resource (the platform's admission check reads it)
+spec:
+  owner:
+    projectName: demo
+    resourceName: hello-db
+  environment: development
+  retainPolicy: Delete                    # throwaway: unbinding removes the XR (and the CNPG cluster)
+  # resourceRelease: set once the Resource controller has cut the release (status.latestRelease.name)
+  resourceTypeEnvironmentConfigs:
+    size: S
+    storageGiB: 10

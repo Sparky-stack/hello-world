@@ -1,0 +1,27 @@
+# psql (from the CNPG PostgreSQL image the cnpg backend runs) connects with the env OpenChoreo derives from the
+# Resource's outputs: host/port/database as values, username/password/uri as secretKeyRefs to <name>-app.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: pg-probe-workload
+spec:
+  owner:
+    projectName: demo
+    componentName: pg-probe
+  container:
+    image: ghcr.io/cloudnative-pg/postgresql:17.12-standard-trixie@sha256:b6d31545fc2c500cc56af2cff91bbc37408deff6815b84446da0a2c9a54b3d1c
+    command: ["/bin/sh", "-c"]
+    args:
+      - >-
+        until psql "$DATABASE_URL" -tAc "select 'connected as ' || current_user || ' to ' || current_database() || ' on ' || '$PGHOST:$PGPORT'";
+        do echo "waiting for $PGHOST"; sleep 5; done; exec sleep infinity
+  dependencies:
+    resources:
+      - ref: hello-db
+        envBindings:
+          host: PGHOST
+          port: PGPORT
+          database: PGDATABASE
+          username: PGUSER
+          password: PGPASSWORD
+          uri: DATABASE_URL

@@ -1,0 +1,17 @@
+# TEMPORARY (koorikla/platform #70 live proof): a worker that consumes a PostgreSQL database from the platform's
+# ClusterResourceType postgresql. Own tenant app `pg-probe` (platform installations/local/tenants/demo.yaml), so the
+# hello-world app keeps one Component per repo. Removed after the proof.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: pg-probe
+  annotations:
+    openchoreo.dev/display-name: PostgreSQL probe
+    openchoreo.dev/description: Connects to the hello-db Resource with the credentials OpenChoreo injects (#70 test)
+spec:
+  owner:
+    projectName: demo
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/worker
+  autoDeploy: true
