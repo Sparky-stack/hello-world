@@ -13,8 +13,20 @@ spec:
     componentName: hello-world
   environment: staging
   releaseName: hello-world-77ff9dc697
+  # Two replicas so the platform's PodDisruptionBudget (staging + production) keeps one pod through a node drain;
+  # the KEDA floor matches (production denies autoscalers below 2, staging audits).
   componentTypeEnvironmentConfigs:
-    replicas: 1
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  traitEnvironmentConfigs:
+    scaler:
+      minReplicas: 2
   workloadOverrides:
     container:
       env:

@@ -41,6 +41,28 @@ spec:
   # componentTypeEnvironmentConfigs.replicas no longer applies (KEDA's HPA owns the replica count). Needs addon keda
   # on the environment's data plane (dev1 runs it). Per-environment bounds: release-bindings/*.yaml traitEnvironmentConfigs.
   traits:
+    # Readiness gates traffic, liveness restarts a wedged process, startup protects slow boots from liveness.
+    # Production requires the readiness probe (platform policy openchoreo-workload-resilience-enforce). Spread, PDB,
+    # graceful shutdown and priority come from the component type itself (platform docs/openchoreo.md
+    # "Resilience defaults"): nothing to add here.
+    - kind: ClusterTrait
+      name: health-probes
+      instanceName: probes
+      parameters:
+        readiness:
+          enabled: true
+          handler: { httpGet: { port: 8080, path: /healthz } }
+          periodSeconds: 5
+        liveness:
+          enabled: true
+          handler: { httpGet: { port: 8080, path: /healthz } }
+          periodSeconds: 10
+          failureThreshold: 3
+        startup:
+          enabled: true
+          handler: { httpGet: { port: 8080, path: /healthz } }
+          periodSeconds: 2
+          failureThreshold: 15
     - kind: ClusterTrait
       name: keda-scaler
       instanceName: scaler
