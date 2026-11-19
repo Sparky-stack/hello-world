@@ -19,6 +19,7 @@ KINDS = {
     "openchoreo.dev_components.yaml": "Component",
     "openchoreo.dev_workloads.yaml": "Workload",
     "openchoreo.dev_releasebindings.yaml": "ReleaseBinding",
+    "openchoreo.dev_secretreferences.yaml": "SecretReference",
 }
 OUT = pathlib.Path(__file__).parent / "crd-schemas"
 

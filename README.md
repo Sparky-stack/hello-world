@@ -92,7 +92,8 @@ cosign verify ghcr.io/koorikla/hello-world:<short-sha> \
 `deploy/openchoreo/` holds the OpenChoreo 1.3.3 developer manifests for project `demo`:
 
 - `component.yaml`: `Component/hello-world` referencing `ClusterComponentType` `deployment/service` with `autoDeploy: true`.
-- `workload.yaml`: `Workload/hello-world-workload` defining the GHCR image, `GREETING` env, and external `HTTP` endpoint on port `8080`.
+- `workload.yaml`: `Workload/hello-world-workload` defining the GHCR image, `GREETING` env, `GREETING_SECRET` (from the SecretReference below), and external `HTTP` endpoint on port `8080`.
+- `greeting-secret.yaml`: `SecretReference/hello-world-greeting`, a pointer to key `hello-world` / property `greeting` in the project's OpenBao mount `kv-tenant-demo`; the value is never in git. How to write, consume and rotate it: koorikla/platform docs/openchoreo.md "Application secrets (developer view)". `hack/validate-manifests.py` fails if a `secretKeyRef` names a missing SecretReference or key.
 - `release-bindings/development.yaml`: `ReleaseBinding/hello-world-development` (omits `spec.releaseName`; `autoDeploy: true` causes the OpenChoreo controller to cut an immutable `ComponentRelease` named `hello-world-<hash>` and update this binding automatically, while Argo CD ignores `/spec/releaseName`).
 - `release-bindings/staging.yaml` & `production.yaml`: `ReleaseBinding` objects for `staging` (on `dev1`) and `production` (on `prod1`), dormant until promoted.
 
@@ -104,4 +105,4 @@ Promoting to `production` is automatic up to the PR: once the `staging` rollout 
 
 ### Platform-side registration
 
-The platform repository (`koorikla/platform`) registers this app in `installations/local/tenants/demo.yaml`, which creates the `demo` OpenChoreo `Project`, an isolated `AppProject` (`demo`) whitelisting `Component`, `Workload`, and `ReleaseBinding` in namespace `default`, and an Argo CD `Application` syncing `deploy/openchoreo`.
+The platform repository (`koorikla/platform`) registers this app in `installations/local/tenants/demo.yaml`, which creates the `demo` OpenChoreo `Project`, an isolated `AppProject` (`demo`) whitelisting the OpenChoreo developer kinds (`Component`, `Workload`, `ReleaseBinding`, `SecretReference`, ...) in namespace `default`, and an Argo CD `Application` syncing `deploy/openchoreo`.
