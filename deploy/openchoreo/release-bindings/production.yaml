@@ -13,6 +13,8 @@ spec:
     componentName: hello-world
   environment: production
   releaseName: hello-world-77ff9dc697
+  # replicas >= 2, requests and the KEDA floor >= 2 are required in production (platform policy
+  # openchoreo-workload-resilience-enforce); the PodDisruptionBudget follows from replicas >= 2.
   componentTypeEnvironmentConfigs:
     replicas: 2
     resources:
@@ -22,6 +24,9 @@ spec:
       limits:
         cpu: 500m
         memory: 128Mi
+  traitEnvironmentConfigs:
+    scaler:
+      minReplicas: 2
   workloadOverrides:
     container:
       env:
