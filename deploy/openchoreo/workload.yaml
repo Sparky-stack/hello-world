@@ -19,6 +19,12 @@ spec:
     env:
       - key: GREETING
         value: hello
+      # From OpenBao via the SecretReference in greeting-secret.yaml (same name); no value in git.
+      - key: GREETING_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: hello-world-greeting
+            key: greeting
   endpoints:
     http:
       type: HTTP

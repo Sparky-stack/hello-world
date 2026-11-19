@@ -2,7 +2,7 @@
 """Validate deploy/openchoreo/ against the OpenChoreo 1.3.3 CRD schemas.
 
 Strict like `kubeconform -strict`: unknown fields are errors (the API server
-would silently prune them). Also checks repo invariants (owner refs, binding
+would silently prune them). Also checks repo invariants (owner refs, secretKeyRef -> SecretReference, binding
 names). Needs: pyyaml, jsonschema.
 """
 import json
@@ -50,6 +50,8 @@ def load_schema(kind, api_version):
 def main() -> int:
     errors = []
     seen = {}
+    secret_refs = {}  # SecretReference name -> its secretKeys
+    secret_key_refs = []  # (where, name, key) of every Workload secretKeyRef
     for path in sorted(MANIFESTS.rglob("*.yaml")):
         rel = path.relative_to(ROOT)
         for i, doc in enumerate(yaml.safe_load_all(path.read_text())):
@@ -73,6 +75,15 @@ def main() -> int:
                 errors.append(f"{where}: duplicate {kind}/{name} (also in {seen[(kind, name)]})")
             seen[(kind, name)] = where
 
+            if kind == "SecretReference":  # no owner: org-namespace object, named by the Workload
+                secret_refs[name] = {d.get("secretKey") for d in doc["spec"].get("data", [])}
+                continue
+            if kind == "Workload":
+                c = doc["spec"].get("container", {})
+                for item in c.get("env", []) + c.get("files", []):
+                    ref = (item.get("valueFrom") or {}).get("secretKeyRef")
+                    if ref:
+                        secret_key_refs.append((where, ref.get("name"), ref.get("key")))
             owner = doc.get("spec", {}).get("owner", {})
             if owner.get("projectName") != PROJECT:
                 errors.append(f"{where}: spec.owner.projectName must be {PROJECT!r}")
@@ -82,6 +93,11 @@ def main() -> int:
                 env = doc["spec"].get("environment")
                 if name != f"{COMPONENT}-{env}":
                     errors.append(f"{where}: ReleaseBinding name must be {COMPONENT}-{env}")
+
+    # OpenChoreo rejects a binding whose secretKeyRef names a missing SecretReference or key; fail here first.
+    for where, ref_name, key in secret_key_refs:
+        if key not in secret_refs.get(ref_name, set()):
+            errors.append(f"{where}: secretKeyRef {ref_name}/{key} has no SecretReference with that secretKey")
 
     kinds = {k for k, _ in seen}
     for required in ("Component", "Workload", "ReleaseBinding"):
