@@ -68,7 +68,7 @@ func pingDB(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close(context.Background())
+	defer func() { _ = conn.Close(context.Background()) }() // the probe result is already decided
 	var one int
 	return conn.QueryRow(ctx, "SELECT 1").Scan(&one)
 }
