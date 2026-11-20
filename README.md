@@ -7,11 +7,13 @@ Minimal Go HTTP service used to exercise the `koorikla/platform` stack (Cluster 
 - `GET /` — returns JSON `{"message", "hostname", "version"}`
 - `GET /healthz` — returns `200 OK` with `{"status": "ok"}`
 - `GET /version` — returns `200 OK` with `{"version": "<git sha>"}` (the short commit SHA of the build; promotion checks compare it per environment)
+- `GET /db` — runs `SELECT 1` on the database: `200 OK` with `{"status": "ok"}`, `503` with `{"status": "error"}` (cause in the log) or `{"status": "not configured"}` when no database is wired. Not part of `/healthz`: a database outage neither restarts nor unroutes the app.
 
 Configuration:
 
 - `PORT` (default `8080`)
 - `GREETING` (default `hello`)
+- `DATABASE_URL` or libpq's `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` (set by the platform from the `orders-db` Resource, see below; optional)
 - `main.version` (injected at build time via `-ldflags "-X main.version=<git sha>"`, default `dev`)
 
 ## Local run & verification
@@ -96,6 +98,8 @@ cosign verify ghcr.io/koorikla/hello-world:<short-sha> \
 - `greeting-secret.yaml`: `SecretReference/hello-world-greeting`, a pointer to key `hello-world` / property `greeting` in the project's OpenBao mount `kv-tenant-demo`; the value is never in git. How to write, consume and rotate it: koorikla/platform docs/openchoreo.md "Application secrets (developer view)". `hack/validate-manifests.py` fails if a `secretKeyRef` names a missing SecretReference or key.
 - `release-bindings/development.yaml`: `ReleaseBinding/hello-world-development` (omits `spec.releaseName`; `autoDeploy: true` causes the OpenChoreo controller to cut an immutable `ComponentRelease` named `hello-world-<hash>` and update this binding automatically, while Argo CD ignores `/spec/releaseName`).
 - `release-bindings/staging.yaml` & `production.yaml`: `ReleaseBinding` objects for `staging` (on `dev1`) and `production` (on `prod1`), dormant until promoted.
+- `orders-db.yaml`: `Resource/orders-db` of the platform's `ClusterResourceType` `postgresql` (koorikla/platform docs/data-services.md "PostgreSQL from OpenChoreo"). `workload.yaml` `dependencies.resources` wires its outputs into the container: `PGHOST`/`PGPORT`/`PGDATABASE` as values, `PGUSER`/`PGPASSWORD`/`DATABASE_URL` as `secretKeyRef`s to the database's Secret `<xr>-app` in the cell namespace (never in git, never on the control plane).
+- `release-bindings/orders-db-development.yaml`: `ResourceReleaseBinding/orders-db-development` runs the database in `development` only. `spec.resourceRelease` pins `orders-db-<hash>` (OpenChoreo 1.3.3 does not auto-deploy Resources; the hash is deterministic, read it from `kubectl get resource orders-db -o jsonpath='{.status.latestRelease.name}'` after a parameter or platform type change). There is no staging or production binding yet (production cells cannot run CloudNativePG before koorikla/platform#327): a `ComponentRelease` with this dependency waits (`ResourceDependenciesPending`) in any environment without an `orders-db-<env>` binding, so add `orders-db-staging.yaml` / `orders-db-production.yaml` (production: `highAvailability: true`, `backup.enabled: true`) before promoting it. `hack/validate-manifests.py` fails if a dependency names a missing Resource or one without a development binding.
 
 ### Promotion
 
