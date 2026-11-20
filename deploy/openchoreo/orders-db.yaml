@@ -4,7 +4,8 @@
 # orders-db-<env>-<hash> into the cell namespace; locally CloudNativePG runs it, on a cloud the same claim becomes the
 # managed service. The app reads it through workload.yaml dependencies.resources (ref: orders-db).
 #
-# Changing spec.parameters cuts a new ResourceRelease (orders-db-<new hash>): bump the pin in every binding.
+# Changing spec.parameters cuts a new ResourceRelease (orders-db-<new hash>). Bindings annotated
+# platform.koorikla.io/resource-release: latest follow it automatically; production bindings pin it explicitly.
 apiVersion: openchoreo.dev/v1alpha1
 kind: Resource
 metadata:

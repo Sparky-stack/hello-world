@@ -3,10 +3,12 @@
 
 Strict like `kubeconform -strict`: unknown fields are errors (the API server
 would silently prune them). Also checks repo invariants (owner refs, secretKeyRef -> SecretReference, binding
-names, Workload resource dependency -> Resource -> development ResourceReleaseBinding). Needs: pyyaml, jsonschema.
+names, Workload resource dependency -> Resource -> development ResourceReleaseBinding, ResourceReleaseBinding pin:
+annotation "latest" or <resource>-<hash> outside production, explicit pin in production). Needs: pyyaml, jsonschema.
 """
 import json
 import pathlib
+import re
 import sys
 
 import jsonschema
@@ -16,6 +18,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCHEMAS = ROOT / "hack" / "crd-schemas"
 MANIFESTS = ROOT / "deploy" / "openchoreo"
 PROJECT, COMPONENT = "demo", "hello-world"
+LATEST_ANNOTATION = "platform.koorikla.io/resource-release"
+GATED_ENVIRONMENTS = {"production"}  # koorikla/platform promotion.gatedEnvironments
 
 
 def strict(schema):
@@ -105,9 +109,20 @@ def main() -> int:
                 resource_bindings.append((where, res, env))
                 if name != f"{res}-{env}":
                     errors.append(f"{where}: ResourceReleaseBinding name must be {res}-{env}")
-                # OpenChoreo 1.3.3 cuts ResourceReleases named <resource>-<hash> and never sets the pin itself.
-                if not str(doc["spec"].get("resourceRelease", "")).startswith(f"{res}-"):
+                # OpenChoreo 1.3.3 cuts ResourceReleases named <resource>-<hash> and never sets the pin itself. Outside
+                # production the platform's auto-build pass sets it when annotated "latest"; production (gated) is
+                # never written by the pass, so it needs the pin in Git (koorikla/platform docs/promotion.md).
+                pin = doc["spec"].get("resourceRelease")
+                follows_latest = (doc.get("metadata", {}).get("annotations") or {}).get(LATEST_ANNOTATION) == "latest"
+                if pin is not None and not re.fullmatch(rf"{re.escape(str(res))}-[0-9a-z]+", str(pin)):
                     errors.append(f"{where}: spec.resourceRelease must pin a release {res}-<hash>")
+                if env in GATED_ENVIRONMENTS:
+                    if follows_latest:
+                        errors.append(f"{where}: {env} must not use {LATEST_ANNOTATION}: latest; pin spec.resourceRelease")
+                    if pin is None:
+                        errors.append(f"{where}: {env} needs an explicit spec.resourceRelease {res}-<hash>")
+                elif pin is None and not follows_latest:
+                    errors.append(f"{where}: set annotation {LATEST_ANNOTATION}: latest or pin spec.resourceRelease")
 
     # OpenChoreo rejects a binding whose secretKeyRef names a missing SecretReference or key; fail here first.
     for where, ref_name, key in secret_key_refs:
