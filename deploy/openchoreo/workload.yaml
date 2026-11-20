@@ -15,7 +15,7 @@ spec:
     branch: main
     commit: "1b08d359b400d7cab8136bd0be81f43172f19b31"
   container:
-    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:1b08d35@sha256:e60603b5bae44a5fc5423aa4f7d6f9005356906524e0aa8120816afda2023937
+    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:1b08d35@sha256:8c865f38e352439064ff386fa95e7822d3a4893f5393216634913bc35dfbe76c
     env:
       - key: GREETING
         value: hello
