@@ -32,3 +32,18 @@ spec:
       # external = routed through the environment's external gateway; requires
       # gateway.ingress.external on the Environment/DataPlane.
       visibility: [external]
+  dependencies:
+    resources:
+      # The orders-db Resource (orders-db.yaml). In each environment OpenChoreo resolves its outputs from that
+      # environment's ResourceReleaseBinding: host/port/database as plain values, username/password/uri as
+      # secretKeyRefs to the database's Secret <xr>-app in the cell namespace (the values never leave the data plane).
+      # The names are libpq's, so any Postgres client finds the database without configuration. GET /db uses them.
+      # A ComponentRelease with this dependency waits in every environment without an orders-db binding.
+      - ref: orders-db
+        envBindings:
+          host: PGHOST
+          port: PGPORT
+          database: PGDATABASE
+          username: PGUSER
+          password: PGPASSWORD
+          uri: DATABASE_URL

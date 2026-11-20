@@ -1,0 +1,21 @@
+# OpenChoreo Resource: a PostgreSQL database for the demo project, from the platform's ClusterResourceType
+# `postgresql` (koorikla/platform docs/data-services.md "PostgreSQL from OpenChoreo"). On each environment that has a
+# ResourceReleaseBinding (release-bindings/orders-db-<env>.yaml) OpenChoreo renders a PostgreSQL XR named
+# orders-db-<env>-<hash> into the cell namespace; locally CloudNativePG runs it, on a cloud the same claim becomes the
+# managed service. The app reads it through workload.yaml dependencies.resources (ref: orders-db).
+#
+# Changing spec.parameters cuts a new ResourceRelease (orders-db-<new hash>). Bindings annotated
+# platform.koorikla.io/resource-release: latest follow it automatically; production bindings pin it explicitly.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Resource
+metadata:
+  name: orders-db
+spec:
+  owner:
+    projectName: demo
+  type:
+    kind: ClusterResourceType
+    name: postgresql
+  parameters:
+    database: orders # immutable: also the owner role (output username)
+    version: "17"    # major version, can only be raised

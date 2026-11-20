@@ -13,12 +13,17 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // version is overridden at build time: -ldflags "-X main.version=<git sha>".
 var version = "dev"
 
-const shutdownTimeout = 10 * time.Second
+const (
+	shutdownTimeout = 10 * time.Second
+	dbTimeout       = 3 * time.Second
+)
 
 // Greeting is the JSON body returned by GET /.
 type Greeting struct {
@@ -33,6 +38,8 @@ type Config struct {
 	Greeting string
 	Hostname string
 	Version  string
+	// Database is set when the platform wired a database: DATABASE_URL, or libpq's PGHOST (+ PGPORT, PGUSER, ...).
+	Database bool
 }
 
 func configFromEnv(getenv func(string) string) Config {
@@ -41,6 +48,7 @@ func configFromEnv(getenv func(string) string) Config {
 		Greeting: getenv("GREETING"),
 		Version:  version,
 	}
+	cfg.Database = getenv("DATABASE_URL") != "" || getenv("PGHOST") != ""
 	if cfg.Port == "" {
 		cfg.Port = "8080"
 	}
@@ -53,7 +61,20 @@ func configFromEnv(getenv func(string) string) Config {
 	return cfg
 }
 
-func newHandler(cfg Config) http.Handler {
+// pingDB opens one connection with DATABASE_URL (pgx falls back to the PG* variables when it is empty) and runs
+// SELECT 1. One connection per request keeps it simple: GET /db is a demo probe, not a hot path.
+func pingDB(ctx context.Context) error {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = conn.Close(context.Background()) }() // the probe result is already decided
+	var one int
+	return conn.QueryRow(ctx, "SELECT 1").Scan(&one)
+}
+
+// newHandler serves the API. ping checks the database for GET /db; it is never called when cfg.Database is false.
+func newHandler(cfg Config, ping func(context.Context) error) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, Greeting{
@@ -67,6 +88,22 @@ func newHandler(cfg Config) http.Handler {
 	})
 	mux.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"version": cfg.Version})
+	})
+	// Not part of /healthz on purpose: a database outage must not restart or unroute the app.
+	mux.HandleFunc("GET /db", func(w http.ResponseWriter, r *http.Request) {
+		if !cfg.Database {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "not configured"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), dbTimeout)
+		defer cancel()
+		if err := ping(ctx); err != nil {
+			// The cause names host, user and database: log it for operators, keep it out of the public response.
+			slog.Warn("database check failed", "err", err)
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "error"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	return mux
 }
@@ -114,6 +151,7 @@ func serve(ctx context.Context, ln net.Listener, h http.Handler, log *slog.Logge
 
 func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(log)
 	cfg := configFromEnv(os.Getenv)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -124,8 +162,8 @@ func main() {
 		log.Error("listen failed", "err", err)
 		os.Exit(1)
 	}
-	log.Info("starting", "version", cfg.Version, "greeting", cfg.Greeting)
-	if err := serve(ctx, ln, newHandler(cfg), log); err != nil {
+	log.Info("starting", "version", cfg.Version, "greeting", cfg.Greeting, "database", cfg.Database)
+	if err := serve(ctx, ln, newHandler(cfg, pingDB), log); err != nil {
 		log.Error("server error", "err", err)
 		os.Exit(1)
 	}

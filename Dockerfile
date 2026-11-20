@@ -4,7 +4,7 @@
 # for each target platform (multi-arch without emulating the toolchain).
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.27.4-alpine@sha256:0a5f7fe796599ff487605987432e7619ae45beeb2fba4c2ce0b907879932aebf AS build
 WORKDIR /src
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
 ARG VERSION=dev

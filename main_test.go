@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
@@ -34,7 +35,7 @@ func TestConfigFromEnvOverrides(t *testing.T) {
 }
 
 func TestRoot(t *testing.T) {
-	h := newHandler(Config{Greeting: "tere", Hostname: "pod-1", Version: "abc1234"})
+	h := newHandler(Config{Greeting: "tere", Hostname: "pod-1", Version: "abc1234"}, nil)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 
@@ -55,7 +56,7 @@ func TestRoot(t *testing.T) {
 }
 
 func TestHealthz(t *testing.T) {
-	h := newHandler(Config{})
+	h := newHandler(Config{}, nil)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if rec.Code != http.StatusOK {
@@ -71,7 +72,7 @@ func TestHealthz(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
-	h := newHandler(Config{Version: "abc1234"})
+	h := newHandler(Config{Version: "abc1234"}, nil)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/version", nil))
 	if rec.Code != http.StatusOK {
@@ -87,7 +88,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestRouting(t *testing.T) {
-	h := newHandler(Config{})
+	h := newHandler(Config{}, nil)
 	cases := []struct {
 		method, path string
 		want         int
@@ -149,5 +150,76 @@ func TestServeGracefulShutdown(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("serve did not return after shutdown")
+	}
+}
+
+func TestConfigFromEnvDatabase(t *testing.T) {
+	for _, tc := range []struct {
+		env  map[string]string
+		want bool
+	}{
+		{map[string]string{}, false},
+		{map[string]string{"DATABASE_URL": "postgresql://u:p@db:5432/orders"}, true},
+		{map[string]string{"PGHOST": "db"}, true},
+	} {
+		if got := configFromEnv(func(k string) string { return tc.env[k] }).Database; got != tc.want {
+			t.Errorf("env %v: Database = %v, want %v", tc.env, got, tc.want)
+		}
+	}
+}
+
+func getDB(t *testing.T, cfg Config, ping func(context.Context) error) (int, map[string]string) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	newHandler(cfg, ping).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/db", nil))
+	var body map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	return rec.Code, body
+}
+
+func TestDBNotConfigured(t *testing.T) {
+	code, body := getDB(t, Config{}, func(context.Context) error {
+		t.Fatal("ping called without a database")
+		return nil
+	})
+	if code != http.StatusServiceUnavailable || body["status"] != "not configured" {
+		t.Errorf("got %d %v, want 503 not configured", code, body)
+	}
+}
+
+func TestDBOK(t *testing.T) {
+	code, body := getDB(t, Config{Database: true}, func(ctx context.Context) error {
+		if _, ok := ctx.Deadline(); !ok {
+			t.Error("ping context has no deadline")
+		}
+		return nil
+	})
+	if code != http.StatusOK || body["status"] != "ok" {
+		t.Errorf("got %d %v, want 200 ok", code, body)
+	}
+}
+
+func TestDBError(t *testing.T) {
+	code, body := getDB(t, Config{Database: true}, func(context.Context) error { return errors.New("connection refused") })
+	if code != http.StatusServiceUnavailable || body["status"] != "error" || body["error"] != "" {
+		t.Errorf("got %d %v, want 503 error", code, body)
+	}
+}
+
+// pingDB against a port nobody listens on: the real driver path returns an error instead of hanging or panicking.
+func TestPingDBUnreachable(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	_ = ln.Close()
+	t.Setenv("DATABASE_URL", "postgresql://u:p@"+addr+"/orders?sslmode=disable")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := pingDB(ctx); err == nil {
+		t.Fatal("pingDB succeeded without a database")
 	}
 }
