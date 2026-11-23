@@ -80,3 +80,4 @@ Promoting to `production` is automatic up to the PR: once the `staging` rollout 
 ### Platform-side registration
 
 The platform repository (`koorikla/platform`) registers this app in `installations/local/tenants/demo.yaml`, which creates the `demo` OpenChoreo `Project`, an isolated `AppProject` (`demo`) whitelisting the OpenChoreo developer kinds (`Component`, `Workload`, `ReleaseBinding`, `SecretReference`, ...) in namespace `default`, and an Argo CD `Application` syncing `deploy/openchoreo`.
+<!-- preview cap check b3 -->
