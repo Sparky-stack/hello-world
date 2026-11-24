@@ -1,4 +1,4 @@
-module github.com/koorikla/hello-world
+module github.com/Sparky-stack/hello-world
 
 go 1.27.4
 
