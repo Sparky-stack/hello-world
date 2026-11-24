@@ -8,7 +8,7 @@ spec:
     projectName: demo
     componentName: hello-world
   source:
-    repository: https://github.com/koorikla/hello-world
+    repository: https://github.com/Sparky-stack/hello-world
     branch: main
     commit: "e0ded57eb163e0e14f00ff162a00f4597b7d0de0"
   container:
