@@ -10,9 +10,9 @@ spec:
   source:
     repository: https://github.com/Sparky-stack/hello-world
     branch: main
-    commit: "e0ded57eb163e0e14f00ff162a00f4597b7d0de0"
+    commit: "3f79eccbd671c9b1f112cd6dbaa9b79d20c98875"
   container:
-    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:e0ded57@sha256:d66c9f2cbfa548ece2f1b1faaf2c596dd3e4d1e04aa6b9174ed2c96090db499e
+    image: harbor.openchoreo.localhost:9443/apps/demo/hello-world:3f79ecc@sha256:6c75180a8846bb800775bd2357365faceebd5c7bf1d4385e3d5e47f8ff66c3a5
     env:
       - key: GREETING
         value: hello
