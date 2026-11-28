@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   checks:
-    uses: Sparky-stack/platform/.github/workflows/app-go.yaml@b02e8e464478aafe9fb19d4947cf95d40f04b6c6 # ci-v1.2.0
+    uses: Sparky-stack/platform/.github/workflows/app-go.yaml@1758ac7782af3d8010fe9d568fbff6636bb0c04e # ci-v1.2.0
     with:
       build_container: false
     permissions:
